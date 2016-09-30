@@ -3,33 +3,38 @@ app = Flask(__name__)
 import csv, hashlib
 
 def hash(word):
-    myhashObject = hashlib.sha1()
-    myhashObject.update(word)
+    myHashObject = hashlib.sha1()
+    w = word.encode('utf-8')
+    myHashObject.update(w)
     return myHashObject.hexdigest()
        #returns hex string
 
 def authenticate(username,password):
-    store = csv.reader(open("data/users.csv"))
+    store = csv.reader(open("data/users.csv",'r'))
     for row in store:
-        if username == row[0]:
-            if password == row[1]:
-                #check hash later
-                return "YES"
-            else:
-                return "WRONG"
+        if row:
+            if username == row[0]:
+                if hash(password) == row[1]:
+                    return "YES"
+                else:
+                    return "WRONG"
     return "NOT EXIST"
 
 
 def addUser(username,password):
-    sheet = ("data/users.csv",'a+')
+    sheet = open("data/users.csv",'r')
     read = csv.reader(sheet)
+    if username == "" or password == "":
+        return False
     for row in read:
-        if username == row[0] or username == None:
-            return False
-    sheet = ("data/users.csv",'w')
+        if row:
+            if (username == row[0]):
+                return False
+    sheet.close()
+    sheet = open("data/users.csv",'a')
     write = csv.writer(sheet)
-    write.writerow([username,password])
-    #add hash later
+    write.writerow([username,hash(password)])
+    return True
 
 @app.route("/")
 def login():
@@ -75,7 +80,7 @@ def create():
         textToPrint = "Registration failed!"
         link = "/register"
         linkTxt = "Click here to return to the registration page."
-    return render_template('result.html',link=link,result=TextToPrint,linkText = linkTxt)
+    return render_template('result.html',link=link,result=textToPrint,linkText = linkTxt)
 
 if __name__ == "__main__":
     app.debug = True
