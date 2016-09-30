@@ -26,9 +26,9 @@ def addUser(username,password):
     for row in read:
         if username == row[0] or username == None:
             return False
-    sheet.seek(0)
-    write = csv.reader(sheet)
-    b.writerow([username,password])
+    sheet = ("data/users.csv",'w')
+    write = csv.writer(sheet)
+    write.writerow([username,password])
     #add hash later
 
 @app.route("/")
@@ -62,9 +62,20 @@ def reg():
     return render_template("register.html")
 
 
-@app.route("/newuser")
+@app.route("/newuser",methods=['POST'])
 def create():
-    return ""
+    textToPrint = ""
+    link = ""
+    linkTxt = ""
+    if addUser(request.form['username'],request.form['password']):
+        textToPrint = "Registration successful!"
+        link = "/"
+        linkTxt = "Click here to return to the login page."
+    else:
+        textToPrint = "Registration failed!"
+        link = "/register"
+        linkTxt = "Click here to return to the registration page."
+    return render_template('result.html',link=link,result=TextToPrint,linkText = linkTxt)
 
 if __name__ == "__main__":
     app.debug = True
