@@ -2,6 +2,9 @@ from flask import Flask, render_template, request, redirect, session
 app = Flask(__name__)
 import csv, hashlib, os
 
+app.secret_key = os.urandom(32)
+loginInstruct = ""
+
 def hash(word):
     myHashObject = hashlib.sha1()
     w = word.encode('utf-8')
@@ -25,7 +28,7 @@ def isUserCookieValid():
     sheet = csv.reader(open("data/users.csv",'r'))
     for row in sheet:
         #how do you check if the key exists
-        if session["username"] and row and session["username"] == row[0]:
+        if session and row and session["username"] == row[0]:
             return True
     return False
 
@@ -48,10 +51,11 @@ def addUser(username,password):
 @app.route("/")
 def login():
     #check the cookie
+    global loginInstruct
     if isUserCookieValid() == True:
-        return render_template("home.html")
+        return render_template("home.html",user=session["username"])
     else:
-        return render_template("login.html")
+        return render_template("login.html",extratext=loginInstruct)
 
 @app.route("/auth",methods=["POST"])
 def check():
@@ -63,28 +67,33 @@ def check():
     textToPrint = ""
     link = ""
     linkTxt = ""
+    global loginInstruct
     if request.form["submit"] == "Login":
         success = authenticate(request.form['username'],request.form['password'])
         if success == "YES":
             textToPrint = "Login successful!"
-            app.secret_key = os.urandom(32)
             session["username"] = request.form['username']
+            return redirect("/")
         elif success == "WRONG":
             textToPrint = "Login failed!"
         else:
-            textToPrint = "You broke the page"
+            textToPrint = "User does not exist! Please go back"
+            #return render_template("login.html", extratext = "User provided does not exist")
+            #loginInstruct = "User provided does not exist"
+            #redirect("login.html")
     elif request.form["submit"] == "Register":
         if addUser(request.form['username'],request.form['password']):
             textToPrint = "Registration successful!"
             link = "/"
             linkTxt = "Click here to return to the login page."
+            #return render_template("login.html", extratext = "User successfully registered!")
         else:
             textToPrint = "Registration failed!"
             link = "/register"
             linkTxt = "Click here to return to the registration page."
     elif request.form["submit"] == "Logout":
         session.pop("username")
-        return redirect("login.html")
+        return redirect("/")
     return render_template("result.html",result=textToPrint,link=link,linkText = linkTxt)
 
 
