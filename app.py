@@ -4,6 +4,7 @@ import csv, hashlib, os
 
 app.secret_key = os.urandom(32)
 loginInstruct = ""
+loadAmount = 0
 
 def hash(word):
     myHashObject = hashlib.sha1()
@@ -15,12 +16,11 @@ def hash(word):
 def authenticate(username,password):
     store = csv.reader(open("data/users.csv",'r'))
     for row in store:
-        if row:
-            if username == row[0]:
-                if hash(password) == row[1]:
-                    return "YES"
-                else:
-                    return "WRONG"
+        if row and username == row[0]:
+            if hash(password) == row[1]:
+                return "YES"
+            else:
+                return "WRONG"
     return "NOT EXIST"
 
 
@@ -50,73 +50,55 @@ def addUser(username,password):
 
 @app.route("/")
 def login():
-    #check the cookie
     global loginInstruct
+    global loadAmount
+    if loadAmount > 0:
+        loginInstruct = ""
+        loadAmount = 0
     if isUserCookieValid() == True:
         return render_template("home.html",user=session["username"])
     else:
-        return render_template("login.html",extratext=loginInstruct)
+        if loginInstruct == "":
+            return render_template("login.html")
+        loadAmount += 1
+        return render_template("login.html",extratext = loginInstruct)
+
 
 @app.route("/auth",methods=["POST"])
 def check():
-    #print app
-    #print request
-    #print request.args
-    #print request.args['username']
-    #print request.headers
     textToPrint = ""
     link = ""
     linkTxt = ""
     global loginInstruct
+    global loadAmount
+    loadAmount = 0
     if request.form["submit"] == "Login":
         success = authenticate(request.form['username'],request.form['password'])
         if success == "YES":
             textToPrint = "Login successful!"
             session["username"] = request.form['username']
+            loadAmount = 0
+            loginInstruct = ""
             return redirect("/")
         elif success == "WRONG":
-            textToPrint = "Login failed!"
+            loginInstruct = "Login failed!"
+            return redirect("/")
         else:
-            textToPrint = "User does not exist! Please go back"
-            #return render_template("login.html", extratext = "User provided does not exist")
-            #loginInstruct = "User provided does not exist"
-            #redirect("login.html")
+            loginInstruct = "User provided does not exist"
+            return redirect("/")
     elif request.form["submit"] == "Register":
         if addUser(request.form['username'],request.form['password']):
-            textToPrint = "Registration successful!"
-            link = "/"
-            linkTxt = "Click here to return to the login page."
-            #return render_template("login.html", extratext = "User successfully registered!")
+            loginInstruct = "User successfully registered! You can now log in!"
+            return redirect("/")
         else:
-            textToPrint = "Registration failed!"
-            link = "/register"
-            linkTxt = "Click here to return to the registration page."
+            loginInstruct = "Registration failed!"
+            return redirect("/")
     elif request.form["submit"] == "Logout":
+        loadAmount = 0
+        loginInstruct = ""
         session.pop("username")
         return redirect("/")
-    return render_template("result.html",result=textToPrint,link=link,linkText = linkTxt)
-
-
-@app.route("/register")
-def reg():
-    return render_template("register.html")
-
-
-
-somestring = '''@app.route("/newuser",methods=['POST'])
-def create():
-    textToPrint = ""
-    link = ""
-    linkTxt = ""
-    if addUser(request.form['username'],request.form['password']):
-        textToPrint = "Registration successful!"
-        link = "/"
-        linkTxt = "Click here to return to the login page."
-    else:
-        textToPrint = "Registration failed!"
-        link = "/register"
-        linkTxt = "Click here to return to the registration page."
-    return render_template('result.html',link=link,result=textToPrint,linkText = linkTxt)'''
+    return render_template("result.html",result="You broke the page!")
 
 
 @app.route("/jacobo")
