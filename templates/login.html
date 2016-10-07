@@ -2,10 +2,13 @@
 <html>
   <head><title>Home</title></head>
   <body align="center">
-    <div width="20%" style="background-color:yellow; font-size: 18">
+    {% if (extratext|length > 0) %}
+    <div style="background-color:yellow; font-size: 22px; width:30%; margin:auto; border-style: outset; height: 30px; ">
       <mark><b>{{extratext}}</b></mark>
     </div>
+    {% endif %}
     <h2>Log In or Register</h2>
+    {{extratext}}
     <form action="/auth" method="POST">
       <p>Username:</br>
       <input type="text" name="username"></p>
